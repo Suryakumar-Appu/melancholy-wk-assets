@@ -121,8 +121,8 @@ var G={
 
 function resetRain(){
   G.rain=[];
-  var wx=Math.round(0.016*W),wy=Math.round(0.130*H);
-  var ww=Math.round(0.483*W),wh=Math.round(0.369*H);
+  var wx=Math.round(0.016*(cv.width||W)),wy=Math.round(0.130*(cv.height||H));
+  var ww=Math.round(0.483*(cv.width||W)),wh=Math.round(0.369*(cv.height||H));
   for(var i=0;i<22;i++){
     G.rain.push({
       x:wx+Math.random()*ww,
@@ -166,15 +166,16 @@ function getSky(){
 function rc(a){return 'rgb('+a[0]+','+a[1]+','+a[2]+')';}
 
 function draw(){
-  if(!W||!H)return;
-  ctx.clearRect(0,0,W,H);
+  var cw=cv.width,ch=cv.height;
+  if(!cw||!ch)return;
+  ctx.clearRect(0,0,cw,ch);
 
   // Precisely measured window coords from actual image pixels (1023x1537)
   // sky region: x 1.6-49.9%, y 13.0-49.9%
-  var wx=Math.round(0.016*W);
-  var wy=Math.round(0.130*H);
-  var ww=Math.round(0.483*W);
-  var wh=Math.round(0.369*H);
+  var wx=Math.round(0.016*cw);
+  var wy=Math.round(0.130*ch);
+  var ww=Math.round(0.483*cw);
+  var wh=Math.round(0.369*ch);
 
   // Paint sky strictly inside window using clip
   var sky=getSky();
@@ -246,13 +247,13 @@ function draw(){
 
   // Lamp glow — warm pool, unclipped, over whole room
   if(!G.away){
-    var lx=W*0.68,ly=H*0.50;
+    var lx=cw*0.68,ly=ch*0.50;
     var sadNorm=Math.max(0,(G.sad-38)/62);
-    var lg=ctx.createRadialGradient(lx,ly,4,lx,ly,W*0.32);
+    var lg=ctx.createRadialGradient(lx,ly,4,lx,ly,cw*0.32);
     lg.addColorStop(0,'rgba(215,168,75,'+((1-sadNorm)*0.20+0.04)+')');
     lg.addColorStop(0.5,'rgba(195,148,55,'+((1-sadNorm)*0.09)+')');
     lg.addColorStop(1,'rgba(175,128,45,0)');
-    ctx.fillStyle=lg;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=lg;ctx.fillRect(0,0,cw,ch);
   }
 
   // Room gloom
@@ -260,22 +261,22 @@ function draw(){
   var gloom=Math.max(0,sadNorm2*0.32+(G.day-1)*0.015);
   if(gloom>0.01){
     ctx.fillStyle='rgba(4,2,10,'+Math.min(0.62,gloom)+')';
-    ctx.fillRect(0,0,W,H);
+    ctx.fillRect(0,0,cw,ch);
   }
 
   // Brief bright
   if(G.briefBright>0){
     ctx.fillStyle='rgba(252,238,192,'+Math.min(0.28,G.briefBright/280*0.28)+')';
-    ctx.fillRect(0,0,W,H);
+    ctx.fillRect(0,0,cw,ch);
   }
 
   // Vignette
   var vs=Math.max(0,sadNorm2*0.22+(G.day-1)*0.010);
   if(vs>0.01){
-    var vg=ctx.createRadialGradient(W*0.5,H*0.45,W*0.1,W*0.5,H*0.45,W*0.8);
+    var vg=ctx.createRadialGradient(cw*0.5,ch*0.45,cw*0.1,cw*0.5,ch*0.45,cw*0.8);
     vg.addColorStop(0,'rgba(0,0,0,0)');
     vg.addColorStop(1,'rgba(0,0,0,'+Math.min(vs,0.55)+')');
-    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=vg;ctx.fillRect(0,0,cw,ch);
   }
 }
 
@@ -490,8 +491,8 @@ function loop(){
     if(G.briefBright>0)G.briefBright=Math.max(0,G.briefBright-dt*36);
     if(G.sad>58){
       G.rain.forEach(function(d){
-        var wx=Math.round(0.016*W),wy=Math.round(0.130*H);
-        var ww=Math.round(0.483*W),wh=Math.round(0.369*H);
+        var wx=Math.round(0.016*cv.width),wy=Math.round(0.130*cv.height);
+        var ww=Math.round(0.483*cv.width),wh=Math.round(0.369*cv.height);
         d.y+=d.s*(G.sad-58)/42*0.35;
         if(d.y>wy+wh){d.y=wy;d.x=wx+Math.random()*ww;}
       });
