@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Melancholy Wk.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=Space+Mono&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{background:#06040c;font-family:'Lora',serif;display:flex;justify-content:center;min-height:100vh}
+#app{width:100%;max-width:430px;display:flex;flex-direction:column;background:#06040c}
+#scene{position:relative;width:100%;overflow:hidden;line-height:0}
+#scene img{display:block;width:100%;position:absolute;top:0;left:0;transition:opacity 0.55s ease}
+#scene img.hidden{opacity:0;pointer-events:none}
+#scene img.visible{opacity:1}
+#scene canvas{position:absolute;top:0;left:0;width:100%;pointer-events:none;z-index:2}
+#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:12px 16px;z-index:5;pointer-events:none}
+.ht{font-family:'Space Mono',monospace;font-size:8px;color:rgba(210,185,148,0.45);letter-spacing:2px}
+#choice-area{padding:14px 20px 32px;min-height:185px;display:flex;flex-direction:column}
+#sit{font-size:11px;font-style:italic;color:rgba(160,133,96,0.38);min-height:20px;margin-bottom:12px;line-height:1.6;letter-spacing:0.3px}
+#cset{display:flex;flex-direction:column;gap:1px}
+.cb{background:transparent;border:none;border-bottom:1px solid rgba(142,106,58,0.13);color:rgba(185,158,116,0.72);font-family:'Lora',serif;font-size:14px;padding:13px 4px;text-align:left;cursor:pointer;line-height:1.5;width:100%;transition:color 0.12s}
+.cb:hover,.cb:active{color:rgba(215,190,150,0.96);border-color:rgba(142,106,58,0.32)}
+.cb.res{color:rgba(138,112,76,0.36);pointer-events:none;border-color:transparent}
+#sleep-ui{display:none;position:absolute;inset:0;background:rgba(3,2,8,0.96);z-index:20;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#sleep-ui.show{display:flex}
+.sl{font-family:'Space Mono',monospace;font-size:8px;color:rgba(88,70,50,0.42);letter-spacing:4px}
+#sc{display:flex;align-items:center;gap:10px;margin-top:4px}
+#sc select,#sc button{background:transparent;border:1px solid rgba(85,62,40,0.32);color:rgba(132,106,70,0.55);font-family:'Space Mono',monospace;font-size:8px;padding:6px 10px;cursor:pointer;-webkit-appearance:none}
+#away-ui{display:none;position:absolute;inset:0;z-index:6;flex-direction:column;align-items:center;justify-content:center;gap:6px;pointer-events:none;background:rgba(4,2,9,0.35)}
+#away-ui.show{display:flex}
+#awt{font-family:'Space Mono',monospace;font-size:18px;color:rgba(140,170,195,0.58);letter-spacing:4px}
+#awl{font-size:10px;font-style:italic;color:rgba(112,140,162,0.35);letter-spacing:1px}
+#ending{display:none;position:fixed;inset:0;background:#04020a;z-index:30;overflow-y:auto;padding:44px 26px 64px;flex-direction:column}
+#ending.show{display:flex}
+#et{font-size:13px;color:rgba(0,0,0,0);line-height:1.92;white-space:pre-wrap;transition:color 2.8s ease}
+#et.vis{color:rgba(188,160,122,0.76)}
+#es{font-family:'Space Mono',monospace;font-size:8px;color:rgba(0,0,0,0);letter-spacing:2px;margin-top:30px;transition:color 2s ease 1s}
+#es.vis{color:rgba(128,102,68,0.36)}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);font-size:10px;font-style:italic;color:rgba(160,132,92,0.48);opacity:0;transition:opacity 0.45s;pointer-events:none;text-align:center;z-index:25;white-space:nowrap}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="scene">
+    <img id="img-desk"         class="visible" src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/desk.png">
+    <img id="img-empty"        class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/empty.png">
+    <img id="img-couch"        class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/couch.png">
+    <img id="img-bed_sleep"    class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/bed_sleep.png">
+    <img id="img-window_stand" class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/window_stand.png">
+    <img id="img-bed_read"     class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/bed_read.png">
+    <canvas id="cv"></canvas>
+    <div id="hud">
+      <span class="ht" id="dlbl">day 1</span>
+      <span class="ht" id="tlbl">morning</span>
+    </div>
+    <div id="away-ui"><div id="awt">--:--</div><div id="awl">outside</div></div>
+    <div id="sleep-ui">
+      <div class="sl">asleep</div>
+      <div id="sc">
+        <span style="font-family:'Space Mono',monospace;font-size:7px;color:rgba(85,68,48,0.38)">wake at</span>
+        <select id="alsel">
+          <option value="7">7:00</option><option value="8">8:00</option>
+          <option value="9" selected>9:00</option><option value="10">10:00</option>
+          <option value="11">11:00</option>
+        </select>
+        <button id="wbtn">continue</button>
+      </div>
+    </div>
+  </div>
+  <div id="choice-area">
+    <div id="sit"></div>
+    <div id="cset"></div>
+  </div>
+  <div id="ending"><div id="et"></div><div id="es">- melancholy wk.</div></div>
+</div>
+<div id="toast"></div>
+<script>
+(function(){
+var STATES=['desk','empty','couch','bed_sleep','window_stand','bed_read'];
+var curState='desk';
+function showState(s){
+  if(s===curState)return;
+  STATES.forEach(function(n){
+    var el=document.getElementById('img-'+n);
+    if(el)el.className=n===s?'visible':'hidden';
+  });
+  curState=s;
+}
+
+var cv=document.getElementById('cv');
+var ctx=cv.getContext('2d');
+var W=430,H=538;
+
+function resizeCanvas(){
+  var img=document.getElementById('img-desk');
+  if(img.naturalWidth){
+    var w=img.parentElement.offsetWidth||430;
+    var ratio=img.naturalHeight/img.naturalWidth;
+    W=w; H=Math.round(w*ratio);
+    cv.width=W; cv.height=H;
+    cv.style.height=H+'px';
+    img.parentElement.style.height=H+'px';
+    resetRain();
+  }
+}
+
+var G={
+  day:1,hour:8,min:0,sad:65,
+  away:false,awayOut:false,sleeping:false,resolving:false,
+  choicesLeft:7,boxes:0,mugs:0,
+  briefBright:0,brightUsed:false,ended:false,
+  recentIds:[],counts:{},
+  chains:{washMug:0,takeTrash:0,waterPlant:0,makeBed:0,goOutside:0,playGame:0,msgBack:0,shower:0,answerEmail:0},
+  unlocked:{cookMeal:false,jog:false,playOnline:false,callSomeone:false,sitOutside:false},
+  flags:{dishes:false,plantBad:false,unreadMsg:false,trash:false,noShower:false},
+  rain:[]
+};
+
+function resetRain(){
+  G.rain=[];
+  for(var i=0;i<22;i++){
+    G.rain.push({x:(0.03+Math.random()*0.44)*W,y:(0.02+Math.random()*0.56)*H,s:1.2+Math.random()*1.6});
+  }
+}
+
+function gH(){return G.hour;}
+function gM(){return G.min;}
+function pad(n){return n<10?'0'+n:''+n;}
+function tStr(){return pad(gH())+':'+pad(gM());}
+function tLbl(){return gH()<12?'morning':gH()<17?'afternoon':gH()<21?'evening':'night';}
+
+function advTime(m){
+  G.min+=m;
+  while(G.min>=60){G.min-=60;G.hour++;}
+  if(G.hour>=24)G.hour=23;
+  document.getElementById('dlbl').textContent='day '+G.day;
+  document.getElementById('tlbl').textContent=tLbl();
+}
+
+function lerp(a,b,t){return a.map(function(v,i){return Math.round(v+(b[i]-v)*Math.max(0,Math.min(1,t)));});}
+function getSky(){
+  var h=gH(),m=gM(),mins=h*60+m;
+  if(mins<300)return{t:[4,3,14],b:[8,5,22],stars:true};
+  if(mins<420){var p=(mins-300)/120;return{t:lerp([4,3,14],[185,95,55],p),b:lerp([8,5,22],[235,145,65],p),stars:p<0.4};}
+  if(mins<660){var p=(mins-420)/240;return{t:lerp([80,130,195],[95,155,215],p),b:lerp([145,195,230],[175,215,240],p)};}
+  if(mins<960)return{t:[95,155,215],b:[175,215,240]};
+  if(mins<1110){var p=(mins-960)/150;return{t:lerp([95,155,215],[235,120,45],p),b:lerp([175,215,240],[255,175,65],p)};}
+  if(mins<1200){var p=(mins-1110)/90;return{t:lerp([235,120,45],[95,35,65],p),b:lerp([255,175,65],[155,55,95],p)};}
+  if(mins<1290){var p=(mins-1200)/90;return{t:lerp([95,35,65],[8,5,22],p),b:lerp([155,55,95],[14,8,30],p)};}
+  return{t:[4,3,14],b:[8,5,22],stars:true};
+}
+function rc(a){return 'rgb('+a[0]+','+a[1]+','+a[2]+')';}
+
+function draw(){
+  if(!W||!H)return;
+  ctx.clearRect(0,0,W,H);
+  var b=G.briefBright>0?Math.min(0.95,0.7+G.briefBright/280*0.22):Math.max(0.05,(100-G.sad)/100*0.68+0.08-(G.day-1)*0.025);
+  var wx=Math.round(0.02*W),wy=Math.round(0.01*H),ww=Math.round(0.47*W),wh=Math.round(0.60*H);
+  var sky=getSky();
+  var sg=ctx.createLinearGradient(wx,wy,wx,wy+wh);
+  sg.addColorStop(0,rc(sky.t));sg.addColorStop(1,rc(sky.b));
+  ctx.fillStyle=sg;ctx.fillRect(wx,wy,ww,wh);
+  if(sky.stars){
+    [[0.08,0.05],[0.18,0.12],[0.28,0.04],[0.38,0.15],[0.44,0.08],[0.12,0.22],[0.32,0.25],[0.42,0.28]].forEach(function(sp){
+      ctx.fillStyle='rgba(255,255,215,0.45)';ctx.fillRect(Math.round(wx+sp[0]*ww),Math.round(wy+sp[1]*wh),2,2);
+    });
+    ctx.fillStyle='rgba(235,228,195,0.88)';ctx.beginPath();ctx.arc(wx+ww*0.78,wy+wh*0.14,H*0.018,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=rc(sky.t);ctx.beginPath();ctx.arc(wx+ww*0.80,wy+wh*0.12,H*0.014,0,Math.PI*2);ctx.fill();
+  }
+  var h=gH();
+  if(h>=6&&h<20){
+    var st=((h*60+gM())-360)/(14*60);
+    var sx=wx+ww*(0.1+0.8*st),sy=wy+wh*(0.08+0.2*Math.sin(Math.PI*st));
+    var sunG=ctx.createRadialGradient(sx,sy,0,sx,sy,H*0.04);
+    sunG.addColorStop(0,'rgba(255,242,155,0.95)');sunG.addColorStop(1,'rgba(255,215,80,0)');
+    ctx.fillStyle=sunG;ctx.fillRect(sx-H*0.05,sy-H*0.05,H*0.1,H*0.1);
+    ctx.fillStyle='rgba(255,248,180,0.92)';ctx.fillRect(Math.round(sx-4),Math.round(sy-4),9,9);
+  }
+  var cityA=h>=20||h<6?0.88:h>=17?0.52:0.08;
+  if(cityA>0.05){
+    ctx.fillStyle='rgba(8,5,18,'+cityA+')';
+    [[0,0.48,0.08,0.52],[0.08,0.42,0.07,0.58],[0.15,0.50,0.06,0.50],[0.21,0.44,0.09,0.56],[0.30,0.52,0.07,0.48],[0.37,0.45,0.08,0.55],[0.45,0.50,0.06,0.50],[0.51,0.43,0.09,0.57],[0.60,0.48,0.07,0.52],[0.67,0.40,0.10,0.60],[0.77,0.46,0.08,0.54],[0.85,0.42,0.09,0.58],[0.94,0.49,0.06,0.51]].forEach(function(bd){
+      ctx.fillRect(Math.round(wx+bd[0]*ww),Math.round(wy+bd[1]*wh),Math.round(bd[2]*ww),Math.round(bd[3]*wh));
+    });
+    if(h>=18||h<7){
+      for(var i=0;i<20;i++){
+        var bx2=wx+Math.random()*ww*0.95,by2=wy+wh*(0.46+Math.random()*0.5);
+        if(by2<wy+wh){ctx.fillStyle='rgba(255,205,80,0.55)';ctx.fillRect(Math.round(bx2),Math.round(by2),2,2);}
+      }
+    }
+  }
+  if(G.sad>58){
+    var rA=(G.sad-58)/42*0.28;
+    ctx.strokeStyle='rgba(148,182,210,'+rA+')';ctx.lineWidth=1;
+    G.rain.forEach(function(d){
+      if(d.x>=wx&&d.x<wx+ww&&d.y>=wy&&d.y<wy+wh){ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x+1,d.y+9);ctx.stroke();}
+    });
+  }
+  ctx.strokeStyle='rgba(18,12,8,0.20)';ctx.lineWidth=2;
+  for(var bi=0;bi<9;bi++){var bly=wy+bi*(wh/9);ctx.beginPath();ctx.moveTo(wx,bly);ctx.lineTo(wx+ww,bly);ctx.stroke();}
+  var gloom=(G.sad-38)/62*0.55+(G.day-1)*0.028;
+  if(gloom>0.02){ctx.fillStyle='rgba(4,2,10,'+Math.min(0.78,gloom)+')';ctx.fillRect(0,0,W,H);}
+  if(b>0.12&&!G.away){
+    var lx=W*0.72,ly=H*0.50;
+    var lg=ctx.createRadialGradient(lx,ly,4,lx,ly,W*0.28);
+    lg.addColorStop(0,'rgba(215,168,75,'+(b*0.22)+')');lg.addColorStop(0.4,'rgba(195,148,55,'+(b*0.10)+')');lg.addColorStop(1,'rgba(175,128,45,0)');
+    ctx.fillStyle=lg;ctx.fillRect(lx-W*0.32,ly-H*0.26,W*0.64,H*0.52);
+  }
+  if(G.briefBright>0){ctx.fillStyle='rgba(250,238,192,'+Math.min(0.24,G.briefBright/280*0.24)+')';ctx.fillRect(0,0,W,H);}
+  var vs=(G.sad-38)/62*0.38+(G.day-1)*0.018;
+  if(vs>0.02){
+    var vg=ctx.createRadialGradient(W*0.5,H*0.5,W*0.15,W*0.5,H*0.5,W*0.75);
+    vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,'+Math.min(vs,0.65)+')');
+    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  }
+}
+
+function cnt(id){return G.counts[id]||0;}
+var ALL=[
+  {id:'coffee',     lf:function(){return cnt('coffee')>=3?'make coffee. same as yesterday.':'make coffee';},                                            pool:'morn', dur:18, type:'d', state:'empty',        cd:2},
+  {id:'shower',     lf:function(){return 'have a shower';},                                                                                             pool:'morn', dur:26, type:'m', state:'empty',        cd:3, ch:'shower'},
+  {id:'makeBed',    lf:function(){return 'make the bed';},                                                                                              pool:'morn', dur:12, type:'m', state:'empty',        cd:3, ch:'makeBed'},
+  {id:'openBlinds', lf:function(){return 'open the blinds a little';},                                                                                  pool:'morn', dur:8,  type:'m', state:'desk',         cd:4},
+  {id:'jog',        lf:function(){return 'go for a jog';},                                                                                              pool:'morn', dur:46, type:'m', state:'empty',        cd:2, ch:'goOutside', away:true, out:true, unlock:'jog'},
+  {id:'sitOutCof',  lf:function(){return 'sit outside with your coffee';},                                                                              pool:'morn', dur:40, type:'m', state:'empty',        cd:2, away:true, out:true, unlock:'sitOutside'},
+  {id:'laptop',     lf:function(){return 'open the laptop';},                                                                                           pool:'any',  dur:80, type:'m', state:'desk',         cd:1, ch:'answerEmail'},
+  {id:'project',    lf:function(){return 'work on the monthly project';},                                                                               pool:'day',  dur:85, type:'m', state:'desk',         cd:2, ch:'answerEmail'},
+  {id:'standup',    lf:function(){return 'join the standup';},                                                                                          pool:'standup',dur:30,type:'m', state:'desk',         cd:99,ch:'answerEmail'},
+  {id:'scroll',     lf:function(){return cnt('scroll')>=3?'scroll again. nothing new.':'open instagram. close instagram.';},                           pool:'any',  dur:50, type:'t', state:'couch',        cd:1},
+  {id:'phone',      lf:function(){return 'check your phone';},                                                                                          pool:'any',  dur:22, type:'t', state:'couch',        cd:1},
+  {id:'seeMsg',     lf:function(){return "see a message. don't reply.";},                                                                              pool:'any',  dur:14, type:'t', state:'couch',        cd:2},
+  {id:'reply',      lf:function(){return "reply to the message you've been ignoring";},                                                                pool:'any',  dur:24, type:'m', state:'desk',         cd:2, ch:'msgBack'},
+  {id:'order',      lf:function(){return cnt('order')>=2?'order your usual':'order food';},                                                            pool:'any',  dur:14, type:'d', state:'desk',         cd:2, box:true},
+  {id:'waterPlant', lf:function(){return 'water the plant';},                                                                                          pool:'day',  dur:8,  type:'m', state:'empty',        cd:2, ch:'waterPlant'},
+  {id:'washMug',    lf:function(){return cnt('washMug')>=2?'the mug is clean at least':'wash the mug';},                                              pool:'day',  dur:10, type:'m', state:'empty',        cd:2, ch:'washMug'},
+  {id:'trash',      lf:function(){return 'take the trash out';},                                                                                        pool:'day',  dur:14, type:'m', state:'empty',        cd:3, away:true, ch:'takeTrash'},
+  {id:'outside',    lf:function(){return 'go outside, just for a bit';},                                                                               pool:'day',  dur:58, type:'m', state:'empty',        cd:2, away:true, out:true, ch:'goOutside'},
+  {id:'game',       lf:function(){return cnt('game')>=3?"same server, same people who don't know your name":'play a game';},                          pool:'any',  dur:82, type:'d', state:'couch',        cd:1, ch:'playGame'},
+  {id:'online',     lf:function(){return 'join a game with others';},                                                                                  pool:'any',  dur:72, type:'m', state:'couch',        cd:2, unlock:'playOnline'},
+  {id:'window',     lf:function(){return 'stand by the window for a while';},                                                                          pool:'any',  dur:28, type:'m', state:'window_stand', cd:2},
+  {id:'comic',      lf:function(){return cnt('comic')>=2?'read the weekly comic again':'read the weekly comic';},                                     pool:'any',  dur:42, type:'d', state:'bed_read',     cd:2},
+  {id:'doodle',     lf:function(){return 'doodle something in the corner of a notebook';},                                                             pool:'any',  dur:22, type:'m', state:'couch',        cd:2},
+  {id:'music',      lf:function(){return cnt('music')>=2?'put on the same playlist again':'put on a playlist you made two years ago';},               pool:'any',  dur:36, type:'m', state:'couch',        cd:2},
+  {id:'lie',        lf:function(){return 'lie down for a minute';},                                                                                     pool:'any',  dur:46, type:'t', state:'bed_sleep',   cd:1},
+  {id:'stare',      lf:function(){return 'stare at nothing in particular';},                                                                           pool:'any',  dur:26, type:'t', state:'desk',         cd:1},
+  {id:'water',      lf:function(){return 'drink some water';},                                                                                         pool:'any',  dur:5,  type:'m', state:'desk',         cd:1},
+  {id:'call',       lf:function(){return 'actually call someone';},                                                                                    pool:'any',  dur:36, type:'m', state:'couch',        cd:3, unlock:'callSomeone'},
+  {id:'cook',       lf:function(){return 'cook something proper';},                                                                                    pool:'eve',  dur:55, type:'m', state:'empty',        cd:2, unlock:'cookMeal'},
+  {id:'watch',      lf:function(){return cnt('watch')>=2?'watch the same show again':'watch something. anything.';},                                  pool:'eve',  dur:80, type:'d', state:'couch',        cd:1},
+  {id:'oneMore',    lf:function(){return 'one more episode';},                                                                                         pool:'eve',  dur:50, type:'t', state:'couch',        cd:1},
+  {id:'leftovers',  lf:function(){return 'eat the leftovers cold';},                                                                                   pool:'eve',  dur:10, type:'d', state:'desk',         cd:2, box:true},
+  {id:'tea',        lf:function(){return 'make tea';},                                                                                                 pool:'eve',  dur:15, type:'d', state:'empty',        cd:2},
+  {id:'sitDark',    lf:function(){return 'sit in the dark for a bit';},                                                                                pool:'eve',  dur:25, type:'t', state:'window_stand', cd:2},
+  {id:'latePhone',  lf:function(){return "it's 2am. you're still on your phone.";},                                                                   pool:'late', dur:54, type:'t', state:'couch',        cd:1},
+  {id:'ceiling',    lf:function(){return 'stare at the ceiling';},                                                                                     pool:'late', dur:40, type:'t', state:'bed_sleep',   cd:1},
+  {id:'sleep',      lf:function(){return 'go to sleep';},                                                                                              pool:'sleep',dur:0,  type:'sleep',state:'bed_sleep'},
+  {id:'trySleep',   lf:function(){return 'try to sleep';},                                                                                             pool:'late', dur:0,  type:'sleep',state:'bed_sleep'},
+  {id:'dishes',     lf:function(){return 'the dishes are piling up';},                                                                                 pool:'any',  dur:28, type:'m', state:'empty',        cd:99,flag:'dishes'},
+  {id:'badPlant',   lf:function(){return 'the plant really looks bad';},                                                                               pool:'any',  dur:8,  type:'m', state:'empty',        cd:99,flag:'plantBad',ch:'waterPlant'},
+  {id:'unread',     lf:function(){return "there's a message you haven't opened";},                                                                     pool:'any',  dur:18, type:'t', state:'couch',        cd:99,flag:'unreadMsg'},
+  {id:'trashBig',   lf:function(){return 'the trash really needs to go';},                                                                             pool:'any',  dur:14, type:'m', state:'empty',        cd:99,flag:'trash',away:true,ch:'takeTrash'},
+  {id:'noShower',   lf:function(){return "you haven't showered in a while";},                                                                          pool:'morn', dur:26, type:'m', state:'empty',        cd:99,flag:'noShower',ch:'shower'},
+];
+
+function avail(){
+  var h=gH(),m=gM();
+  var isSleep=h>=21||h<5,isLate=h>=22||h<5,isEve=h>=17&&h<23,isMorn=h>=5&&h<13,isDay=h>=9&&h<20;
+  var isStandup=h===9&&m>=28&&m<=45;
+  var pool=ALL.filter(function(c){
+    if(c.unlock&&!G.unlocked[c.unlock])return false;
+    if(c.flag&&!G.flags[c.flag])return false;
+    if(c.pool==='sleep')return isSleep;
+    if(c.pool==='late')return isLate;
+    if(c.pool==='standup')return isStandup;
+    if(c.pool==='eve')return isEve;
+    if(c.pool==='morn')return isMorn;
+    if(c.pool==='day')return isDay;
+    return true;
+  });
+  pool=pool.filter(function(c){
+    if(c.type==='sleep')return true;
+    var li=G.recentIds.indexOf(c.id);
+    return li===-1||li>=(c.cd||2);
+  });
+  pool=pool.sort(function(){return Math.random()-0.5;});
+  var max=G.sad>82?2:G.sad>65?3:4;
+  var sleepC=null;
+  pool.forEach(function(c){if(c.type==='sleep'&&!sleepC)sleepC=c;});
+  var rest=pool.filter(function(c){return c.type!=='sleep';}).slice(0,max);
+  return (isSleep&&sleepC)?rest.concat([sleepC]):rest;
+}
+
+var SITS={morning:['another morning','the day is waiting','morning'],afternoon:['the afternoon','midday','later'],evening:['evening','getting late','the day winds down'],night:['late','quiet now','']};
+var cur=[];
+
+function render(res,lbl){
+  var cs=document.getElementById('cset');
+  cs.innerHTML='';
+  if(G.sleeping||G.ended)return;
+  if(res){var b=document.createElement('button');b.className='cb res';b.textContent=(lbl||'')+'...';cs.appendChild(b);return;}
+  cur.forEach(function(c){
+    var b=document.createElement('button');b.className='cb';b.textContent=c.lf();
+    b.addEventListener('click',function(){act(c);});cs.appendChild(b);
+  });
+}
+
+function act(c){
+  if(G.resolving||G.ended)return;
+  if(c.type==='sleep'){doSleep();return;}
+  G.resolving=true;G.choicesLeft--;
+  G.counts[c.id]=(G.counts[c.id]||0)+1;
+  G.recentIds.unshift(c.id);if(G.recentIds.length>12)G.recentIds.pop();
+  showState(c.state||'desk');
+  if(c.away||c.out){
+    G.away=true;G.awayOut=!!c.out;
+    document.getElementById('away-ui').classList.add('show');
+    document.getElementById('awl').textContent=c.out?'outside':'away';
+    document.getElementById('awt').textContent=tStr();
+  }
+  if(c.box){G.boxes++;if(G.boxes===3)toast('boxes starting to pile up');}
+  if(c.ch)G.chains[c.ch]=(G.chains[c.ch]||0)+1;
+  if(c.flag)G.flags[c.flag]=false;
+  checkUnlocks();
+  render(true,c.lf());
+  var delta=0;
+  if(c.type==='m'){var r=Math.random();delta=r<0.38?-(2+r*9):r<0.6?(Math.random()-0.5)*2:1+Math.random()*5;}
+  else if(c.type==='t'){delta=Math.random()<0.65?2+Math.random()*10:-(1+Math.random()*3);}
+  else delta=(Math.random()-0.44)*4;
+  var realMs=c.type==='t'?2000:c.type==='m'?1400:1000;
+  var steps=0,total=Math.max(5,Math.ceil(c.dur/2));
+  var iv=setInterval(function(){
+    advTime(2);if(G.awayOut)document.getElementById('awt').textContent=tStr();
+    steps++;if(steps>=total){clearInterval(iv);finish(c,delta);}
+  },realMs/total);
+}
+
+function finish(c,delta){
+  G.sad=Math.max(38,Math.min(100,G.sad+delta));
+  if(G.sad<=43&&!G.brightUsed){
+    G.brightUsed=true;G.briefBright=270;
+    toast('something feels different, just for a moment');
+    setTimeout(function(){G.sad=Math.min(100,G.sad+20);},3800);
+  }
+  G.away=false;G.awayOut=false;G.resolving=false;
+  document.getElementById('away-ui').classList.remove('show');
+  if(c.away||c.out)showState('desk');
+  if(G.choicesLeft<=0||G.hour>=23){endDay();return;}
+  cur=avail();
+  var sl=SITS[tLbl()]||SITS.morning;
+  document.getElementById('sit').textContent=sl[Math.floor(Math.random()*sl.length)];
+  render(false);
+}
+
+function doSleep(){
+  G.sleeping=true;showState('bed_sleep');
+  document.getElementById('sleep-ui').classList.add('show');
+  document.getElementById('cset').innerHTML='';
+  document.getElementById('sit').textContent='';
+}
+
+document.getElementById('wbtn').addEventListener('click',function(){
+  var a=parseInt(document.getElementById('alsel').value);
+  G.min=0;G.hour=a;
+  G.sad=Math.max(38,Math.min(100,G.sad+(-(2+Math.random()*9)+(Math.random()-0.38)*8)));
+  G.sleeping=false;document.getElementById('sleep-ui').classList.remove('show');
+  endDay();
+});
+
+function checkUnlocks(){
+  var c=G.chains;
+  if(!G.unlocked.cookMeal&&c.washMug>=2)G.unlocked.cookMeal=true;
+  if(!G.unlocked.jog&&c.goOutside>=3)G.unlocked.jog=true;
+  if(!G.unlocked.playOnline&&c.playGame>=3)G.unlocked.playOnline=true;
+  if(!G.unlocked.callSomeone&&c.msgBack>=3)G.unlocked.callSomeone=true;
+  if(!G.unlocked.sitOutside&&c.goOutside>=2&&c.washMug>=2)G.unlocked.sitOutside=true;
+}
+
+function endDay(){
+  if(G.day>=7){doEnding();return;}
+  G.day++;G.hour=8;G.min=0;G.choicesLeft=6+Math.floor(Math.random()*4);
+  G.sleeping=false;G.resolving=false;
+  if(G.chains.washMug<G.day-1)G.mugs=Math.min(3,G.mugs+1);
+  G.flags.dishes=G.chains.washMug<G.day-2&&G.day>=3;
+  G.flags.plantBad=G.chains.waterPlant<G.day-2&&G.day>=3;
+  G.flags.unreadMsg=G.day>=3&&G.chains.msgBack<1;
+  G.flags.trash=G.chains.takeTrash<1&&G.day>=2;
+  G.flags.noShower=G.chains.shower<G.day-3&&G.day>=4;
+  showState('desk');
+  document.getElementById('dlbl').textContent='day '+G.day;
+  document.getElementById('tlbl').textContent='morning';
+  var fa=0;
+  var fi=setInterval(function(){
+    fa+=0.05;ctx.fillStyle='rgba(4,2,9,'+Math.min(1,fa)+')';ctx.fillRect(0,0,W,H);
+    if(fa>=1){clearInterval(fi);setTimeout(function(){
+      var fo=1;var fout=setInterval(function(){
+        fo-=0.04;ctx.fillStyle='rgba(4,2,9,'+Math.max(0,fo)+')';ctx.fillRect(0,0,W,H);
+        if(fo<=0){clearInterval(fout);cur=avail();document.getElementById('sit').textContent='day '+G.day;render(false);}
+      },36);
+    },500);}
+  },36);
+}
+
+function doEnding(){
+  G.ended=true;var fa=0;
+  var fi=setInterval(function(){
+    fa+=0.01;ctx.fillStyle='rgba(4,2,9,'+Math.min(1,fa)+')';ctx.fillRect(0,0,W,H);
+    if(fa>=1){clearInterval(fi);
+      document.getElementById('choice-area').style.display='none';
+      var el=document.getElementById('ending');el.classList.add('show');
+      document.getElementById('et').textContent="Hi There,\n\nMelancholy Wk. isn't really a game, its an anti-game. I love playing and building games. And there are many great worlds that I have lost myself into, and mediocre worlds of my own that I have built.\n\nOver the past 2 years, I have struggled with my mental health. I haven't quite found my fit in this world yet, and I see myself slipping and spiraling but also hoping, wanting, and growing.\n\nMy most depressed days are the ones that are actually filled with a lot of color and the days that I am actually doing okay, my world is quite black/white. But this isn't true to all days, I could have colorful happy days and extremely sad dark days as well.\n\nDepression is a struggle because the solutions always seem easy - seek help, go out, start a hobby, talk to someone, and so on. But the act of doing any of those things is such a mountain to climb on most days.\n\nSo thats how Melancholy Wk. came to be. An effort into showing how depression can look like and manifest, how agency to act isn't a guarantee for success. Also a visual way in which it can help someone else articulate the same struggles that I have faced.\n\nSo if a friend did share this with you, do check in on them.\n\nTake Care :))";
+      setTimeout(function(){document.getElementById('et').classList.add('vis');document.getElementById('es').classList.add('vis');},300);
+    }
+  },36);
+}
+
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},4000);}
+
+var lt=Date.now();
+function loop(){
+  if(!G.ended){
+    var now=Date.now(),dt=(now-lt)/1000;lt=now;
+    if(!G.sleeping&&!G.resolving)advTime(dt*0.3);
+    if(G.briefBright>0)G.briefBright=Math.max(0,G.briefBright-dt*36);
+    if(G.sad>58){G.rain.forEach(function(d){d.y+=d.s*(G.sad-58)/42*0.35;if(d.y>H*0.62){d.y=H*0.02;d.x=(0.03+Math.random()*0.44)*W;}});}
+    draw();
+  }
+  requestAnimationFrame(loop);
+}
+
+var deskImg=document.getElementById('img-desk');
+function init(){resizeCanvas();cur=avail();document.getElementById('sit').textContent='day 1';render(false);loop();}
+if(deskImg.complete&&deskImg.naturalWidth){init();}
+else{deskImg.addEventListener('load',init);}
+window.addEventListener('resize',resizeCanvas);
+})();
+</script>
+</body>
+</html>
