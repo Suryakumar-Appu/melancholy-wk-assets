@@ -9,8 +9,8 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{background:#06040c;font-family:'Lora',serif;display:flex;justify-content:center;min-height:100vh}
 #app{width:100%;max-width:430px;display:flex;flex-direction:column;background:#06040c}
-#scene{position:relative;width:100%;overflow:hidden;line-height:0}
-#scene img{display:block;width:100%;position:absolute;top:0;left:0}
+#scene{position:relative;width:100%;overflow:hidden;line-height:0;background:#06040c}
+#scene img{display:block;width:100%;height:100%;position:absolute;top:0;left:0;object-fit:cover}
 img.win{transition:opacity 1.8s ease}
 img.win.hidden{opacity:0;pointer-events:none}
 img.win.visible{opacity:1}
@@ -125,14 +125,22 @@ function updateWindow(){
 var cv=document.getElementById('cv');
 var ctx=cv.getContext('2d');
 
+var sceneLocked=false;
 function resizeCanvas(){
   var img=document.getElementById('img-desk');
   if(img.naturalWidth){
     var w=img.parentElement.offsetWidth||430;
     var ratio=img.naturalHeight/img.naturalWidth;
-    cv.width=w; cv.height=Math.round(w*ratio);
-    cv.style.height=cv.height+'px';
-    img.parentElement.style.height=cv.height+'px';
+    var h=Math.round(w*ratio);
+    cv.width=w; cv.height=h;
+    cv.style.height=h+'px';
+    if(!sceneLocked){
+      img.parentElement.style.height=h+'px';
+      // lock all images to same size
+      var imgs=img.parentElement.querySelectorAll('img');
+      imgs.forEach(function(im){im.style.height=h+'px';im.style.width=w+'px';});
+      sceneLocked=true;
+    }
   }
 }
 
