@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Melancholy Wk.</title>
+<!-- v4 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=Space+Mono&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -14,8 +15,9 @@ html,body{background:#06040c;font-family:'Lora',serif;display:flex;justify-conte
 #scene img.hidden{opacity:0;pointer-events:none}
 #scene img.visible{opacity:1}
 #scene canvas{position:absolute;top:0;left:0;width:100%;pointer-events:none;z-index:2}
-#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:12px 16px;z-index:5;pointer-events:none}
-.ht{font-family:'Space Mono',monospace;font-size:8px;color:rgba(210,185,148,0.45);letter-spacing:2px}
+#hud{position:absolute;top:0;left:0;right:0;display:flex;flex-direction:column;align-items:flex-start;padding:10px 14px;z-index:5;pointer-events:none;gap:3px}
+.ht{font-family:'Space Mono',monospace;font-size:8px;color:rgba(210,185,148,0.52);letter-spacing:2px}
+#clbl{font-size:11px;color:rgba(210,185,148,0.65);letter-spacing:3px}
 #choice-area{padding:14px 20px 32px;min-height:185px;display:flex;flex-direction:column}
 #sit{font-size:11px;font-style:italic;color:rgba(160,133,96,0.38);min-height:20px;margin-bottom:12px;line-height:1.6;letter-spacing:0.3px}
 #cset{display:flex;flex-direction:column;gap:1px}
@@ -52,9 +54,11 @@ html,body{background:#06040c;font-family:'Lora',serif;display:flex;justify-conte
     <img id="img-bed_read"     class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/bed_read.png">
     <canvas id="cv"></canvas>
     <div id="hud">
-      <span class="ht" id="dlbl">day 1</span>
-      <span class="ht" id="clbl">08:00</span>
-      <span class="ht" id="tlbl">morning</span>
+      <div style="display:flex;justify-content:space-between;width:100%">
+        <span class="ht" id="dlbl">day 1</span>
+        <span class="ht" id="tlbl">morning</span>
+      </div>
+      <span id="clbl">08:00</span>
     </div>
     <div id="away-ui"><div id="awt">--:--</div><div id="awl">outside</div></div>
     <div id="sleep-ui">
@@ -135,6 +139,7 @@ function tLbl(){return gH()<12?'morning':gH()<17?'afternoon':gH()<21?'evening':'
 function advTime(m){
   G.min+=m;
   while(G.min>=60){G.min-=60;G.hour++;}
+  G.min=Math.floor(G.min);
   if(G.hour>=24)G.hour=23;
   document.getElementById('dlbl').textContent='day '+G.day;
   document.getElementById('clbl').textContent=tStr();
@@ -142,14 +147,7 @@ function advTime(m){
 }
 
 function lerp(a,b,t){return a.map(function(v,i){return Math.round(v+(b[i]-v)*Math.max(0,Math.min(1,t)));});}
-function getSky(){
-  var h=gH(),m=gM(),mins=h*60+m;
-  if(mins<300)return{t:[4,3,14],b:[8,5,22],stars:true};
-  if(mins<420){var p=(mins-300)/120;return{t:lerp([4,3,14],[185,95,55],p),b:lerp([8,5,22],[235,145,65],p),stars:p<0.4};}
-  if(mins<660){var p=(mins-420)/240;return{t:lerp([80,130,195],[95,155,215],p),b:lerp([145,195,230],[175,215,240],p)};}
-  if(mins<960)return{t:[95,155,215],b:[175,215,240]};
-  if(mins<1110){var p=(mins-960)/150;return{t:lerp([95,155,215],[235,120,45],p),b:lerp([175,215,240],[255,175,65],p)};}
-  if(mins<1200){var p=(mins-1110)/90;return{t:lerp([235,120,45],[95,35,65],p),b:lerp([255,175,65],[155,55,95],p)};}
+;}
   if(mins<1290){var p=(mins-1200)/90;return{t:lerp([95,35,65],[8,5,22],p),b:lerp([155,55,95],[14,8,30],p)};}
   return{t:[4,3,14],b:[8,5,22],stars:true};
 }
