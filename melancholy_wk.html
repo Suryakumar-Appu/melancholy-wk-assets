@@ -4,17 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Melancholy Wk.</title>
-<!-- v7 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=Space+Mono&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{background:#06040c;font-family:'Lora',serif;display:flex;justify-content:center;min-height:100vh}
 #app{width:100%;max-width:430px;display:flex;flex-direction:column;background:#06040c}
 #scene{position:relative;width:100%;overflow:hidden;line-height:0}
-#scene img{display:block;width:100%;position:absolute;top:0;left:0;transition:opacity 0.55s ease}
-#scene img.hidden{opacity:0;pointer-events:none}
-#scene img.visible{opacity:1}
-#scene canvas{position:absolute;top:0;left:0;width:100%;pointer-events:none;z-index:2}
+#scene img{display:block;width:100%;position:absolute;top:0;left:0}
+img.win{transition:opacity 1.8s ease}
+img.win.hidden{opacity:0;pointer-events:none}
+img.win.visible{opacity:1}
+img.room{transition:opacity 0.55s ease;z-index:2}
+img.room.hidden{opacity:0;pointer-events:none}
+img.room.visible{opacity:1}
+#scene canvas{position:absolute;top:0;left:0;width:100%;pointer-events:none;z-index:3}
 #hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:12px 16px;z-index:5;pointer-events:none}
 .ht{font-family:'Space Mono',monospace;font-size:8px;color:rgba(210,185,148,0.52);letter-spacing:2px}
 #choice-area{padding:14px 20px 32px;min-height:185px;display:flex;flex-direction:column}
@@ -45,12 +48,19 @@ html,body{background:#06040c;font-family:'Lora',serif;display:flex;justify-conte
 <body>
 <div id="app">
   <div id="scene">
-    <img id="img-desk"         class="visible" src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/desk.png">
-    <img id="img-empty"        class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/empty.png">
-    <img id="img-couch"        class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/couch.png">
-    <img id="img-bed_sleep"    class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/bed_sleep.png">
-    <img id="img-window_stand" class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/window_stand.png">
-    <img id="img-bed_read"     class="hidden"  src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/bed_read.png">
+    <!-- Window images (behind, z-index:1) — crossfade by time of day -->
+    <img class="win visible"  id="win-night"     src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/night.png">
+    <img class="win hidden"   id="win-dawn"      src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/dawn.png">
+    <img class="win hidden"   id="win-morning"   src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/morning.png">
+    <img class="win hidden"   id="win-afternoon" src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/afternoon.png">
+    <img class="win hidden"   id="win-evening"   src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/evening.png">
+    <!-- Room images (on top, z-index:2) — swap by character position -->
+    <img class="room visible" id="img-desk"         src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/desk.png">
+    <img class="room hidden"  id="img-empty"        src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/empty.png">
+    <img class="room hidden"  id="img-couch"        src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/couch.png">
+    <img class="room hidden"  id="img-bed_sleep"    src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/bed_sleep.png">
+    <img class="room hidden"  id="img-window_stand" src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/window_stand.png">
+    <img class="room hidden"  id="img-bed_read"     src="https://raw.githubusercontent.com/Suryakumar-Appu/melancholy-wk-assets/main/bed_read.png">
     <canvas id="cv"></canvas>
     <div id="hud">
       <span class="ht" id="dlbl">day 1</span>
@@ -79,34 +89,54 @@ html,body{background:#06040c;font-family:'Lora',serif;display:flex;justify-conte
 <div id="toast"></div>
 <script>
 (function(){
-var STATES=['desk','empty','couch','bed_sleep','window_stand','bed_read'];
-var curState='desk';
-function showState(s){
-  if(s===curState)return;
-  STATES.forEach(function(n){
+// ── ROOM STATE ───────────────────────────────────────────────────────────────
+var ROOMS=['desk','empty','couch','bed_sleep','window_stand','bed_read'];
+var curRoom='desk';
+function showRoom(s){
+  if(s===curRoom)return;
+  ROOMS.forEach(function(n){
     var el=document.getElementById('img-'+n);
-    if(el)el.className=n===s?'visible':'hidden';
+    if(el)el.className='room '+(n===s?'visible':'hidden');
   });
-  curState=s;
+  curRoom=s;
 }
 
+// ── WINDOW STATE ─────────────────────────────────────────────────────────────
+var WINS=['night','dawn','morning','afternoon','evening'];
+var curWin='night';
+function getWinForHour(h){
+  if(h>=5&&h<8)return'dawn';
+  if(h>=8&&h<16)return'morning';
+  if(h>=16&&h<19)return'afternoon';
+  if(h>=19&&h<22)return'evening';
+  return'night';
+}
+function updateWindow(){
+  var w=getWinForHour(G.hour);
+  if(w===curWin)return;
+  WINS.forEach(function(n){
+    var el=document.getElementById('win-'+n);
+    if(el)el.className='win '+(n===w?'visible':'hidden');
+  });
+  curWin=w;
+}
+
+// ── CANVAS ───────────────────────────────────────────────────────────────────
 var cv=document.getElementById('cv');
 var ctx=cv.getContext('2d');
-var W=430,H=645;
 
 function resizeCanvas(){
   var img=document.getElementById('img-desk');
   if(img.naturalWidth){
     var w=img.parentElement.offsetWidth||430;
     var ratio=img.naturalHeight/img.naturalWidth;
-    W=w; H=Math.round(w*ratio);
-    cv.width=W; cv.height=H;
-    cv.style.height=H+'px';
-    img.parentElement.style.height=H+'px';
-    resetRain();
+    cv.width=w; cv.height=Math.round(w*ratio);
+    cv.style.height=cv.height+'px';
+    img.parentElement.style.height=cv.height+'px';
   }
 }
 
+// ── GAME STATE ───────────────────────────────────────────────────────────────
 var G={
   day:1,hour:8,min:0,sad:40,
   away:false,awayOut:false,sleeping:false,resolving:false,
@@ -115,22 +145,8 @@ var G={
   recentIds:[],counts:{},
   chains:{washMug:0,takeTrash:0,waterPlant:0,makeBed:0,goOutside:0,playGame:0,msgBack:0,shower:0,answerEmail:0},
   unlocked:{cookMeal:false,jog:false,playOnline:false,callSomeone:false,sitOutside:false},
-  flags:{dishes:false,plantBad:false,unreadMsg:false,trash:false,noShower:false},
-  rain:[]
+  flags:{dishes:false,plantBad:false,unreadMsg:false,trash:false,noShower:false}
 };
-
-function resetRain(){
-  G.rain=[];
-  var wx=Math.round(0.016*(cv.width||W)),wy=Math.round(0.130*(cv.height||H));
-  var ww=Math.round(0.483*(cv.width||W)),wh=Math.round(0.369*(cv.height||H));
-  for(var i=0;i<22;i++){
-    G.rain.push({
-      x:wx+Math.random()*ww,
-      y:wy+Math.random()*wh,
-      s:1.2+Math.random()*1.6
-    });
-  }
-}
 
 function gH(){return G.hour;}
 function gM(){return G.min;}
@@ -145,143 +161,52 @@ function advTime(m){
   if(G.hour>=24)G.hour=23;
   document.getElementById('dlbl').textContent='day '+G.day;
   document.getElementById('tlbl').textContent=tLbl();
+  updateWindow();
 }
 
-function lerp(a,b,t){
-  return a.map(function(v,i){return Math.round(v+(b[i]-v)*Math.max(0,Math.min(1,t)));});
-}
-
-function getSky(){
-  var h=gH(),mins=h*60+gM();
-  if(mins<300)return{t:[4,3,14],b:[8,5,22],stars:true};
-  if(mins<420){var p=(mins-300)/120;return{t:lerp([4,3,14],[185,95,55],p),b:lerp([8,5,22],[235,145,65],p),stars:p<0.4};}
-  if(mins<660){var p=(mins-420)/240;return{t:lerp([80,130,195],[95,155,215],p),b:lerp([145,195,230],[175,215,240],p)};}
-  if(mins<960)return{t:[95,155,215],b:[175,215,240]};
-  if(mins<1110){var p=(mins-960)/150;return{t:lerp([95,155,215],[235,120,45],p),b:lerp([175,215,240],[255,175,65],p)};}
-  if(mins<1200){var p=(mins-1110)/90;return{t:lerp([235,120,45],[95,35,65],p),b:lerp([255,175,65],[155,55,95],p)};}
-  if(mins<1290){var p=(mins-1200)/90;return{t:lerp([95,35,65],[8,5,22],p),b:lerp([155,55,95],[14,8,30],p)};}
-  return{t:[4,3,14],b:[8,5,22],stars:true};
-}
-
-function rc(a){return 'rgb('+a[0]+','+a[1]+','+a[2]+')';}
-
+// ── DRAW — only gloom + lamp glow, no sky painting ──────────────────────────
 function draw(){
   var cw=cv.width,ch=cv.height;
   if(!cw||!ch)return;
   ctx.clearRect(0,0,cw,ch);
 
-  // Precisely measured window coords from actual image pixels (1023x1537)
-  // sky region: x 1.6-49.9%, y 13.0-49.9%
-  var wx=Math.round(0.016*cw);
-  var wy=Math.round(0.130*ch);
-  var ww=Math.round(0.483*cw);
-  var wh=Math.round(0.369*ch);
+  var sadNorm=Math.max(0,(G.sad-38)/62);
 
-  // Paint sky strictly inside window using clip
-  var sky=getSky();
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(wx,wy,ww,wh);
-  ctx.clip();
-  var sg=ctx.createLinearGradient(wx,wy,wx,wy+wh);
-  sg.addColorStop(0,rc(sky.t));
-  sg.addColorStop(1,rc(sky.b));
-  ctx.fillStyle=sg;
-  ctx.fillRect(wx,wy,ww,wh);
-
-  // Stars + moon
-  if(sky.stars){
-    [[0.08,0.05],[0.18,0.12],[0.28,0.04],[0.38,0.15],[0.44,0.08],[0.12,0.22],[0.32,0.25],[0.42,0.28]].forEach(function(sp){
-      ctx.fillStyle='rgba(255,255,215,0.45)';
-      ctx.fillRect(Math.round(wx+sp[0]*ww),Math.round(wy+sp[1]*wh),2,2);
-    });
-    ctx.fillStyle='rgba(235,228,195,0.88)';
-    ctx.beginPath();ctx.arc(wx+ww*0.78,wy+wh*0.14,H*0.012,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=rc(sky.t);
-    ctx.beginPath();ctx.arc(wx+ww*0.80,wy+wh*0.11,H*0.009,0,Math.PI*2);ctx.fill();
-  }
-
-  // Sun
-  var h=gH();
-  if(h>=6&&h<20){
-    var st=((h*60+gM())-360)/(14*60);
-    var sx=wx+ww*(0.1+0.8*st);
-    var sy=wy+wh*(0.1+0.25*Math.sin(Math.PI*st));
-    var sunG=ctx.createRadialGradient(sx,sy,0,sx,sy,wh*0.12);
-    sunG.addColorStop(0,'rgba(255,242,155,0.95)');
-    sunG.addColorStop(1,'rgba(255,215,80,0)');
-    ctx.fillStyle=sunG;ctx.fillRect(sx-wh*0.13,sy-wh*0.13,wh*0.26,wh*0.26);
-    ctx.fillStyle='rgba(255,248,180,0.92)';
-    ctx.fillRect(Math.round(sx-3),Math.round(sy-3),7,7);
-  }
-
-  // City silhouette
-  var cityA=h>=20||h<6?0.88:h>=17?0.55:0.10;
-  if(cityA>0.05){
-    ctx.fillStyle='rgba(8,5,18,'+cityA+')';
-    [[0,0.50,0.08,0.50],[0.08,0.43,0.07,0.57],[0.15,0.51,0.06,0.49],[0.21,0.45,0.09,0.55],
-     [0.30,0.53,0.07,0.47],[0.37,0.46,0.08,0.54],[0.45,0.51,0.06,0.49],[0.51,0.44,0.09,0.56],
-     [0.60,0.49,0.07,0.51],[0.67,0.41,0.10,0.59],[0.77,0.47,0.08,0.53],[0.85,0.43,0.09,0.57],
-     [0.94,0.50,0.06,0.50]].forEach(function(bd){
-      ctx.fillRect(Math.round(wx+bd[0]*ww),Math.round(wy+bd[1]*wh),Math.round(bd[2]*ww),Math.round(bd[3]*wh));
-    });
-    if(h>=18||h<7){
-      for(var i=0;i<18;i++){
-        var bx2=wx+Math.random()*ww*0.95;
-        var by2=wy+wh*(0.47+Math.random()*0.50);
-        if(by2<wy+wh){ctx.fillStyle='rgba(255,205,80,0.55)';ctx.fillRect(Math.round(bx2),Math.round(by2),2,2);}
-      }
-    }
-  }
-
-  // Rain clipped to window
-  if(G.sad>58){
-    var rA=(G.sad-58)/42*0.28;
-    ctx.strokeStyle='rgba(148,182,210,'+rA+')';ctx.lineWidth=1;
-    G.rain.forEach(function(d){
-      ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(d.x+1,d.y+9);ctx.stroke();
-    });
-  }
-
-  ctx.restore(); // end window clip
-
-  // Lamp glow — warm pool, unclipped, over whole room
+  // Lamp glow — warm pool bottom-right of window area
   if(!G.away){
-    var lx=cw*0.68,ly=ch*0.50;
-    var sadNorm=Math.max(0,(G.sad-38)/62);
-    var lg=ctx.createRadialGradient(lx,ly,4,lx,ly,cw*0.32);
-    lg.addColorStop(0,'rgba(215,168,75,'+((1-sadNorm)*0.20+0.04)+')');
-    lg.addColorStop(0.5,'rgba(195,148,55,'+((1-sadNorm)*0.09)+')');
+    var lx=cw*0.62,ly=ch*0.48;
+    var lg=ctx.createRadialGradient(lx,ly,4,lx,ly,cw*0.35);
+    lg.addColorStop(0,'rgba(215,168,75,'+((1-sadNorm)*0.18+0.04)+')');
+    lg.addColorStop(0.5,'rgba(195,148,55,'+((1-sadNorm)*0.08)+')');
     lg.addColorStop(1,'rgba(175,128,45,0)');
     ctx.fillStyle=lg;ctx.fillRect(0,0,cw,ch);
   }
 
-  // Room gloom
-  var sadNorm2=Math.max(0,(G.sad-38)/62);
-  var gloom=Math.max(0,sadNorm2*0.32+(G.day-1)*0.015);
+  // Room gloom darkens as sadness rises and days pass
+  var gloom=Math.max(0,sadNorm*0.38+(G.day-1)*0.018);
   if(gloom>0.01){
-    ctx.fillStyle='rgba(4,2,10,'+Math.min(0.62,gloom)+')';
+    ctx.fillStyle='rgba(4,2,10,'+Math.min(0.68,gloom)+')';
     ctx.fillRect(0,0,cw,ch);
   }
 
-  // Brief bright
+  // Brief bright flash
   if(G.briefBright>0){
     ctx.fillStyle='rgba(252,238,192,'+Math.min(0.28,G.briefBright/280*0.28)+')';
     ctx.fillRect(0,0,cw,ch);
   }
 
   // Vignette
-  var vs=Math.max(0,sadNorm2*0.22+(G.day-1)*0.010);
+  var vs=Math.max(0,sadNorm*0.25+(G.day-1)*0.012);
   if(vs>0.01){
-    var vg=ctx.createRadialGradient(cw*0.5,ch*0.45,cw*0.1,cw*0.5,ch*0.45,cw*0.8);
+    var vg=ctx.createRadialGradient(cw*0.5,ch*0.4,cw*0.1,cw*0.5,ch*0.4,cw*0.85);
     vg.addColorStop(0,'rgba(0,0,0,0)');
     vg.addColorStop(1,'rgba(0,0,0,'+Math.min(vs,0.55)+')');
     ctx.fillStyle=vg;ctx.fillRect(0,0,cw,ch);
   }
 }
 
+// ── CHOICES ──────────────────────────────────────────────────────────────────
 function cnt(id){return G.counts[id]||0;}
-
 var ALL=[
   {id:'coffee',     lf:function(){return cnt('coffee')>=3?'make coffee. same as yesterday.':'make coffee';},                                            pool:'morn', dur:18, type:'d', state:'empty',        cd:2},
   {id:'shower',     lf:function(){return 'have a shower';},                                                                                             pool:'morn', dur:26, type:'m', state:'empty',        cd:3, ch:'shower'},
@@ -291,7 +216,7 @@ var ALL=[
   {id:'sitOutCof',  lf:function(){return 'sit outside with your coffee';},                                                                              pool:'morn', dur:40, type:'m', state:'empty',        cd:2, away:true, out:true, unlock:'sitOutside'},
   {id:'laptop',     lf:function(){return 'open the laptop';},                                                                                           pool:'any',  dur:80, type:'m', state:'desk',         cd:1, ch:'answerEmail'},
   {id:'project',    lf:function(){return 'work on the monthly project';},                                                                               pool:'day',  dur:85, type:'m', state:'desk',         cd:2, ch:'answerEmail'},
-  {id:'standup',    lf:function(){return 'join the standup';},                                                                                          pool:'standup',dur:30,type:'m', state:'desk',         cd:99,ch:'answerEmail'},
+  {id:'standup',    lf:function(){return 'join the standup';},                                                                                          pool:'standup',dur:30,type:'m', state:'desk',        cd:99,ch:'answerEmail'},
   {id:'scroll',     lf:function(){return cnt('scroll')>=3?'scroll again. nothing new.':'open instagram. close instagram.';},                           pool:'any',  dur:50, type:'t', state:'couch',        cd:1},
   {id:'phone',      lf:function(){return 'check your phone';},                                                                                          pool:'any',  dur:22, type:'t', state:'couch',        cd:1},
   {id:'seeMsg',     lf:function(){return "see a message. don't reply.";},                                                                              pool:'any',  dur:14, type:'t', state:'couch',        cd:2},
@@ -353,7 +278,7 @@ function avail(){
   var sleepC=null;
   pool.forEach(function(c){if(c.type==='sleep'&&!sleepC)sleepC=c;});
   var rest=pool.filter(function(c){return c.type!=='sleep';}).slice(0,max);
-  return (isSleep&&sleepC)?rest.concat([sleepC]):rest;
+  return(isSleep&&sleepC)?rest.concat([sleepC]):rest;
 }
 
 var SITS={morning:['another morning','the day is waiting','morning'],afternoon:['the afternoon','midday','later'],evening:['evening','getting late','the day winds down'],night:['late','quiet now','']};
@@ -376,7 +301,7 @@ function act(c){
   G.resolving=true;G.choicesLeft--;
   G.counts[c.id]=(G.counts[c.id]||0)+1;
   G.recentIds.unshift(c.id);if(G.recentIds.length>12)G.recentIds.pop();
-  showState(c.state||'desk');
+  showRoom(c.state||'desk');
   if(c.away||c.out){
     G.away=true;G.awayOut=!!c.out;
     document.getElementById('away-ui').classList.add('show');
@@ -411,7 +336,7 @@ function finish(c,delta){
   }
   G.away=false;G.awayOut=false;G.resolving=false;
   document.getElementById('away-ui').classList.remove('show');
-  if(c.away||c.out)showState('desk');
+  if(c.away||c.out)showRoom('desk');
   if(G.choicesLeft<=0||G.hour>=23){endDay();return;}
   cur=avail();
   var sl=SITS[tLbl()]||SITS.morning;
@@ -420,7 +345,7 @@ function finish(c,delta){
 }
 
 function doSleep(){
-  G.sleeping=true;showState('bed_sleep');
+  G.sleeping=true;showRoom('bed_sleep');
   document.getElementById('sleep-ui').classList.add('show');
   document.getElementById('cset').innerHTML='';
   document.getElementById('sit').textContent='';
@@ -453,15 +378,17 @@ function endDay(){
   G.flags.unreadMsg=G.day>=3&&G.chains.msgBack<1;
   G.flags.trash=G.chains.takeTrash<1&&G.day>=2;
   G.flags.noShower=G.chains.shower<G.day-3&&G.day>=4;
-  showState('desk');
+  showRoom('desk');
   document.getElementById('dlbl').textContent='day '+G.day;
   document.getElementById('tlbl').textContent='morning';
+  updateWindow();
+  var cw=cv.width,ch=cv.height;
   var fa=0;
   var fi=setInterval(function(){
-    fa+=0.05;ctx.fillStyle='rgba(4,2,9,'+Math.min(1,fa)+')';ctx.fillRect(0,0,W,H);
+    fa+=0.05;ctx.fillStyle='rgba(4,2,9,'+Math.min(1,fa)+')';ctx.fillRect(0,0,cw,ch);
     if(fa>=1){clearInterval(fi);setTimeout(function(){
       var fo=1;var fout=setInterval(function(){
-        fo-=0.04;ctx.fillStyle='rgba(4,2,9,'+Math.max(0,fo)+')';ctx.fillRect(0,0,W,H);
+        fo-=0.04;ctx.fillStyle='rgba(4,2,9,'+Math.max(0,fo)+')';ctx.fillRect(0,0,cw,ch);
         if(fo<=0){clearInterval(fout);cur=avail();document.getElementById('sit').textContent='day '+G.day;render(false);}
       },36);
     },500);}
@@ -469,13 +396,14 @@ function endDay(){
 }
 
 function doEnding(){
-  G.ended=true;var fa=0;
+  G.ended=true;var fa=0;var cw=cv.width,ch=cv.height;
   var fi=setInterval(function(){
-    fa+=0.01;ctx.fillStyle='rgba(4,2,9,'+Math.min(1,fa)+')';ctx.fillRect(0,0,W,H);
+    fa+=0.01;ctx.fillStyle='rgba(4,2,9,'+Math.min(1,fa)+')';ctx.fillRect(0,0,cw,ch);
     if(fa>=1){clearInterval(fi);
       document.getElementById('choice-area').style.display='none';
       var el=document.getElementById('ending');el.classList.add('show');
-      document.getElementById('et').textContent="Hi There,\n\nMelancholy Wk. isn't really a game, its an anti-game. I love playing and building games. And there are many great worlds that I have lost myself into, and mediocre worlds of my own that I have built.\n\nOver the past 2 years, I have struggled with my mental health. I haven't quite found my fit in this world yet, and I see myself slipping and spiraling but also hoping, wanting, and growing.\n\nMy most depressed days are the ones that are actually filled with a lot of color and the days that I am actually doing okay, my world is quite black/white. But this isn't true to all days, I could have colorful happy days and extremely sad dark days as well.\n\nDepression is a struggle because the solutions always seem easy - seek help, go out, start a hobby, talk to someone, and so on. But the act of doing any of those things is such a mountain to climb on most days.\n\nSo thats how Melancholy Wk. came to be. An effort into showing how depression can look like and manifest, how agency to act isn't a guarantee for success. Also a visual way in which it can help someone else articulate the same struggles that I have faced.\n\nSo if a friend did share this with you, do check in on them.\n\nTake Care :))" ;
+      var lines=["Hi There,","","Melancholy Wk. isn't really a game, its an anti-game. I love playing and building games. And there are many great worlds that I have lost myself into, and mediocre worlds of my own that I have built.","","Over the past 2 years, I have struggled with my mental health. I haven't quite found my fit in this world yet, and I see myself slipping and spiraling but also hoping, wanting, and growing.","","My most depressed days are the ones that are actually filled with a lot of color and the days that I am actually doing okay, my world is quite black/white. But this isn't true to all days, I could have colorful happy days and extremely sad dark days as well.","","Depression is a struggle because the solutions always seem easy - seek help, go out, start a hobby, talk to someone, and so on. But the act of doing any of those things is such a mountain to climb on most days.","","So thats how Melancholy Wk. came to be. An effort into showing how depression can look like and manifest, how agency to act isn't a guarantee for success. Also a visual way in which it can help someone else articulate the same struggles that I have faced.","","So if a friend did share this with you, do check in on them.","","Take Care :))"];
+      document.getElementById('et').textContent=lines.join("\n");
       setTimeout(function(){document.getElementById('et').classList.add('vis');document.getElementById('es').classList.add('vis');},300);
     }
   },36);
@@ -489,21 +417,20 @@ function loop(){
     var now=Date.now(),dt=(now-lt)/1000;lt=now;
     if(!G.sleeping&&!G.resolving)advTime(dt*0.3);
     if(G.briefBright>0)G.briefBright=Math.max(0,G.briefBright-dt*36);
-    if(G.sad>58){
-      G.rain.forEach(function(d){
-        var wx=Math.round(0.016*cv.width),wy=Math.round(0.130*cv.height);
-        var ww=Math.round(0.483*cv.width),wh=Math.round(0.369*cv.height);
-        d.y+=d.s*(G.sad-58)/42*0.35;
-        if(d.y>wy+wh){d.y=wy;d.x=wx+Math.random()*ww;}
-      });
-    }
     draw();
   }
   requestAnimationFrame(loop);
 }
 
 var deskImg=document.getElementById('img-desk');
-function init(){resizeCanvas();cur=avail();document.getElementById('sit').textContent='day 1';render(false);loop();}
+function init(){
+  resizeCanvas();
+  updateWindow();
+  cur=avail();
+  document.getElementById('sit').textContent='day 1';
+  render(false);
+  loop();
+}
 if(deskImg.complete&&deskImg.naturalWidth){init();}
 else{deskImg.addEventListener('load',init);}
 window.addEventListener('resize',resizeCanvas);
