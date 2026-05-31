@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Melancholy Wk.</title>
-<!-- v4 -->
+<!-- v6 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=Space+Mono&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{background:#06040c;font-family:'Lora',serif;display:flex;justify-content:center;min-height:100vh}
-#app{width:100%;max-width:430px;display:flex;flex-direction:column;background:#06040c}
+#app{width:100%;max-width:430px;display:flex;flex-direction:column;background:#06040c;min-height:100px}
 #scene{position:relative;width:100%;overflow:hidden;line-height:0}
 #scene img{display:block;width:100%;position:absolute;top:0;left:0;transition:opacity 0.55s ease}
 #scene img.hidden{opacity:0;pointer-events:none}
@@ -146,12 +146,9 @@ function advTime(m){
   document.getElementById('tlbl').textContent=tLbl();
 }
 
-function lerp(a,b,t){return a.map(function(v,i){return Math.round(v+(b[i]-v)*Math.max(0,Math.min(1,t)));});}
-;}
-  if(mins<1290){var p=(mins-1200)/90;return{t:lerp([95,35,65],[8,5,22],p),b:lerp([155,55,95],[14,8,30],p)};}
-  return{t:[4,3,14],b:[8,5,22],stars:true};
-}
-function rc(a){return 'rgb('+a[0]+','+a[1]+','+a[2]+')';}
+
+
+
 
 function draw(){
   if(!W||!H)return;
